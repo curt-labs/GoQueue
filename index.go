@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	numConcurrentProcesses = flag.Int("num-processes", 3, "--num-processes (ex. 3)")
-	nsqLookupServerAddress = flag.String("nsqlookupd-address", "127.0.0.1:4161", "--nsqlookupd-address (ex. 123.123.123:4161)")
+	numConcurrentProcesses = flag.Int("numprocesses", 3, "numprocesses (ex. 3)")
+	nsqLookupServerAddress = flag.String("nsqladdress", "127.0.0.1:4161", "nsqladdress (ex. 123.123.123:4161)")
 )
 
 type (
