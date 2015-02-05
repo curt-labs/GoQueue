@@ -7,5 +7,3 @@ RUN export GOPATH=/home/deployer/gosrc && go get
 RUN export GOPATH=/home/deployer/gosrc && go build -o GoQueue ./index.go
 
 ENTRYPOINT /home/deployer/gosrc/src/github.com/curt-labs/GoQueue/GoQueue
-
-EXPOSE 8080
