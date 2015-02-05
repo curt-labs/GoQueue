@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -8,9 +9,8 @@ import (
 )
 
 var (
-	//TODO: build flags?
-	numConcurrentProcesses = 3
-	serverAddresses        = []string{"127.0.0.1:4161"}
+	numConcurrentProcesses = flag.Int("num-processes", 3, "--num-processes (ex. 3)")
+	nsqLookupServerAddress = flag.String("nsqlookupd-address", "127.0.0.1:4161", "--nsqlookupd-address (ex. 123.123.123:4161)")
 )
 
 type (
@@ -37,6 +37,8 @@ func (h *ConsumerHandler) HandleMessage(msg *nsq.Message) error {
 }
 
 func main() {
+	flag.Parse()
+
 	var err error
 	var consumer *nsq.Consumer
 	var handler *ConsumerHandler
@@ -44,7 +46,7 @@ func main() {
 	config := nsq.NewConfig()
 	consumers := make(map[string]*nsq.Consumer)
 
-	//TODO: build flags?
+	//TODO: build flags? not really sure on setting this up yet...
 	topics := []Topic{
 		Topic{
 			Name: "goapi",
@@ -66,9 +68,9 @@ func main() {
 				Channel: channel.Name,
 			}
 
-			consumer.AddConcurrentHandlers(handler, numConcurrentProcesses)
+			consumer.AddConcurrentHandlers(handler, *numConcurrentProcesses)
 
-			if err = consumer.ConnectToNSQLookupds(serverAddresses); err != nil {
+			if err = consumer.ConnectToNSQLookupd(*nsqLookupServerAddress); err != nil {
 				consumer = nil
 				log.Println(err)
 				continue
