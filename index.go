@@ -54,6 +54,12 @@ func main() {
 				Channel{Name: "metrics"},
 			},
 		},
+		Topic{
+			Name: "v2mock",
+			Channels: []Channel{
+				Channel{Name: "metrics"},
+			},
+		},
 	}
 
 	for _, topic := range topics {
