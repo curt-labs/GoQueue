@@ -10,7 +10,7 @@ import (
 
 var (
 	numConcurrentProcesses = 3
-	nsqLookupServerAddress = flag.String("nsqladdress", "127.0.0.1:4161", "NSQD lookup address")
+	nsqLookupServerAddress = flag.String("nsqladdress", "127.0.0.1:4161", "nsqd lookup server address")
 )
 
 type (
@@ -38,8 +38,6 @@ func (h *ConsumerHandler) HandleMessage(msg *nsq.Message) error {
 
 func main() {
 	flag.Parse()
-
-	log.Printf("nsqLookup address = %s\n", *nsqLookupServerAddress)
 
 	var err error
 	var consumer *nsq.Consumer
