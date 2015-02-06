@@ -1,16 +1,16 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/bitly/go-nsq"
 )
 
 var (
 	numConcurrentProcesses = 3
-	nsqLookupServerAddress = "127.0.0.1:4161"
+	nsqLookupServerAddress = flag.String("nsqladdress", "127.0.0.1:4161", "NSQD lookup address")
 )
 
 type (
@@ -36,13 +36,11 @@ func (h *ConsumerHandler) HandleMessage(msg *nsq.Message) error {
 	return nil
 }
 
-func init() {
-	if os.Getenv("NSQD_LOOKUP_ADDRESS") != "" {
-		nsqLookupServerAddress = os.Getenv("NSQD_LOOKUP_ADDRESS")
-	}
-}
-
 func main() {
+	flag.Parse()
+
+	log.Printf("nsqLookup address = %s\n", *nsqLookupServerAddress)
+
 	var err error
 	var consumer *nsq.Consumer
 	var handler *ConsumerHandler
@@ -74,7 +72,7 @@ func main() {
 
 			consumer.AddConcurrentHandlers(handler, numConcurrentProcesses)
 
-			if err = consumer.ConnectToNSQLookupd(nsqLookupServerAddress); err != nil {
+			if err = consumer.ConnectToNSQLookupd(*nsqLookupServerAddress); err != nil {
 				consumer = nil
 				log.Println(err)
 				continue
