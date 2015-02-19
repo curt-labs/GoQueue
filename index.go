@@ -1,97 +1,44 @@
 package main
 
 import (
-	"flag"
-	"fmt"
 	"log"
 
-	"github.com/bitly/go-nsq"
+	"github.com/curt-labs/GoQueue/helpers/rabbitmq"
+	"github.com/streadway/amqp"
 )
 
-var (
-	numConcurrentProcesses = 3
-	nsqLookupServerAddress = flag.String("nsqladdress", "127.0.0.1:4161", "nsqd lookup server address")
-)
+type ConsumerHandler struct {
+}
 
-type (
-	ConsumerHandler struct {
-		Topic   string
-		Channel string
-	}
-
-	Topic struct {
-		Name     string
-		Channels []Channel
-	}
-
-	Channel struct {
-		Name string
-	}
-)
-
-func (h *ConsumerHandler) HandleMessage(msg *nsq.Message) error {
+func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 	if msg != nil {
-		log.Printf("[%s/%s] %s", h.Topic, h.Channel, string(msg.Body))
+		log.Printf("Got message: %s\n", string(msg.Body))
 	}
 	return nil
 }
 
 func main() {
-	flag.Parse()
+	handler := &ConsumerHandler{}
 
-	var err error
-	var consumer *nsq.Consumer
-	var handler *ConsumerHandler
-
-	config := nsq.NewConfig()
-	consumers := make(map[string]*nsq.Consumer)
-
-	//TODO: build flags? not really sure on setting this up yet...
-	topics := []Topic{
-		Topic{
-			Name: "goapi",
-			Channels: []Channel{
-				Channel{Name: "metrics"},
-			},
-		},
-		Topic{
-			Name: "v2mock",
-			Channels: []Channel{
-				Channel{Name: "metrics"},
-			},
-		},
+	exchange := rabbitmq.Exchange{
+		Name:       "exchange",
+		RoutingKey: "GoAPI",
 	}
 
-	for _, topic := range topics {
-		for _, channel := range topic.Channels {
-			if consumer, err = nsq.NewConsumer(topic.Name, channel.Name, config); err != nil {
-				log.Println(err)
-				continue
-			}
-
-			handler = &ConsumerHandler{
-				Topic:   topic.Name,
-				Channel: channel.Name,
-			}
-
-			consumer.AddConcurrentHandlers(handler, numConcurrentProcesses)
-
-			if err = consumer.ConnectToNSQLookupd(*nsqLookupServerAddress); err != nil {
-				consumer = nil
-				log.Println(err)
-				continue
-			}
-
-			consumers[fmt.Sprintf("%s/%s", topic.Name, channel.Name)] = consumer
-		}
+	consumer, err := rabbitmq.NewConsumer("simple-consumer", "test-queue", exchange, nil)
+	if err != nil {
+		log.Println(err)
+		return
 	}
+
+	consumer.AddHandler(handler)
 
 	for {
-		for _, c := range consumers {
-			select {
-			case <-c.StopChan:
-				return
-			}
+		select {
+		case <-consumer.DoneChan:
+
 		}
 	}
+
+	consumer.Close()
 }
