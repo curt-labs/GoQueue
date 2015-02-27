@@ -7,14 +7,13 @@ import (
 )
 
 type Consumer struct {
-	conn     *amqp.Connection
-	channel  *amqp.Channel
-	config   *Config
-	Name     string
-	Exchange Exchange
-
+	conn             *amqp.Connection
+	channel          *amqp.Channel
+	config           *Config
 	incomingMessages <-chan amqp.Delivery
 	DoneChan         chan error
+	Name             string
+	Exchange         Exchange
 }
 
 type Handler interface {
@@ -34,7 +33,6 @@ func (c *Consumer) AddHandler(handler Handler) {
 func (c *Consumer) handlerLoop(handler Handler) {
 	for msg := range c.incomingMessages {
 		handler.HandleMessage(&msg)
-		msg.Ack(false)
 	}
 	c.DoneChan <- nil
 }
