@@ -12,9 +12,60 @@ import (
 	"github.com/streadway/amqp"
 )
 
+var (
+	configFile            = flag.String("config-file", "", "consumer configuration file")
+	numConcurrentHandlers = flag.Int("concurrent", 3, "number of concurrent handlers")
+)
+
 type ConsumerHandler struct {
 	AppName      string
 	GATrackingID string
+}
+
+func main() {
+	flag.Parse()
+
+	var consumers []*rabbitmq.Consumer
+
+	configs, err := rabbitmq.LoadConsumersConfig(*configFile)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	for indx, config := range configs {
+		consumer, err := rabbitmq.NewConsumer(
+			fmt.Sprintf("consumer%d", indx+1),
+			config.QueueName,
+			rabbitmq.Exchange{
+				Name:       config.ExchangeName,
+				RoutingKey: config.RoutingKey,
+			}, nil)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		if consumer != nil {
+			handler := &ConsumerHandler{
+				AppName:      config.RoutingKey,
+				GATrackingID: config.GATrackingID,
+			}
+			consumer.AddConcurrentHandlers(handler, *numConcurrentHandlers)
+			consumers = append(consumers, consumer)
+		}
+	}
+
+	if len(consumers) > 0 {
+		for {
+			for _, c := range consumers {
+				select {
+				case <-c.DoneChan:
+
+				}
+			}
+		}
+	}
 }
 
 func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
@@ -63,53 +114,4 @@ func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 		msg.Ack(false)
 	}
 	return nil
-}
-
-var (
-	configFile = flag.String("config-file", "", "consumer configuration file")
-)
-
-func main() {
-	flag.Parse()
-
-	var consumers []*rabbitmq.Consumer
-
-	configs, err := rabbitmq.LoadConsumersConfig(*configFile)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	for indx, config := range configs {
-		consumer, err := rabbitmq.NewConsumer(
-			fmt.Sprintf("consumer%d", indx+1),
-			config.QueueName,
-			rabbitmq.Exchange{
-				Name:       config.ExchangeName,
-				RoutingKey: config.RoutingKey,
-			}, nil)
-		if err != nil {
-			continue
-		}
-
-		if consumer != nil {
-			handler := &ConsumerHandler{
-				AppName:      config.RoutingKey,
-				GATrackingID: config.GATrackingID,
-			}
-			consumer.AddConcurrentHandlers(handler, 3)
-			consumers = append(consumers, consumer)
-		}
-	}
-
-	if len(consumers) > 0 {
-		for {
-			for _, c := range consumers {
-				select {
-				case <-c.DoneChan:
-
-				}
-			}
-		}
-	}
 }
