@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 
 	"github.com/curt-labs/GoQueue/helpers/rabbitmq"
@@ -10,11 +12,14 @@ import (
 	"github.com/streadway/amqp"
 )
 
-type ConsumerHandler struct{}
+type ConsumerHandler struct {
+	AppName      string
+	GATrackingID string
+}
 
 func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 	if msg != nil {
-		log.Printf("Got message: %s\n", string(msg.Body))
+		log.Printf("Got message (%s): %s\n", h.AppName, string(msg.Body))
 
 		var event tracker.Event
 
@@ -38,6 +43,7 @@ func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 
 		switch event.Type {
 		case tracker.APIEvent:
+			event.TrackingID = h.GATrackingID
 			if err := event.SendToGoogleAnalytics(); err != nil {
 				msg.Nack(false, true)
 				return err
@@ -59,28 +65,51 @@ func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 	return nil
 }
 
+var (
+	configFile = flag.String("config-file", "", "consumer configuration file")
+)
+
 func main() {
-	handler := &ConsumerHandler{}
+	flag.Parse()
 
-	exchange := rabbitmq.Exchange{
-		Name:       "exchange",
-		RoutingKey: "GoAPI",
-	}
+	var consumers []*rabbitmq.Consumer
 
-	consumer, err := rabbitmq.NewConsumer("simple-consumer", "test-queue", exchange, nil)
+	configs, err := rabbitmq.LoadConsumersConfig(*configFile)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	consumer.AddConcurrentHandlers(handler, 3)
+	for indx, config := range configs {
+		consumer, err := rabbitmq.NewConsumer(
+			fmt.Sprintf("consumer%d", indx+1),
+			config.QueueName,
+			rabbitmq.Exchange{
+				Name:       config.ExchangeName,
+				RoutingKey: config.RoutingKey,
+			}, nil)
+		if err != nil {
+			continue
+		}
 
-	for {
-		select {
-		case <-consumer.DoneChan:
-
+		if consumer != nil {
+			handler := &ConsumerHandler{
+				AppName:      config.RoutingKey,
+				GATrackingID: config.GATrackingID,
+			}
+			consumer.AddConcurrentHandlers(handler, 3)
+			consumers = append(consumers, consumer)
 		}
 	}
 
-	consumer.Close()
+	if len(consumers) > 0 {
+		for {
+			for _, c := range consumers {
+				select {
+				case <-c.DoneChan:
+
+				}
+			}
+		}
+	}
 }
