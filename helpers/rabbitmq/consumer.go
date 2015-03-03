@@ -30,6 +30,12 @@ func (c *Consumer) AddHandler(handler Handler) {
 	go c.handlerLoop(handler)
 }
 
+func (c *Consumer) AddConcurrentHandlers(handler Handler, concurrency int) {
+	for i := 0; i < concurrency; i++ {
+		go c.handlerLoop(handler)
+	}
+}
+
 func (c *Consumer) handlerLoop(handler Handler) {
 	for msg := range c.incomingMessages {
 		handler.HandleMessage(&msg)

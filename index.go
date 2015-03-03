@@ -23,6 +23,19 @@ func (h *ConsumerHandler) HandleMessage(msg *amqp.Delivery) error {
 			return err
 		}
 
+		//This is kind of temporary...converts segmentio Track object
+		//to our tracker event object
+		if event.Action == "" {
+			var t tracker.Track
+			if err := json.Unmarshal(msg.Body, &t); err != nil {
+				msg.Nack(false, true)
+				return err
+			}
+			event.Type = tracker.APIEvent
+			event.Action = t.Event
+			event.Category = "All"
+		}
+
 		switch event.Type {
 		case tracker.APIEvent:
 			if err := event.SendToGoogleAnalytics(); err != nil {
@@ -60,7 +73,7 @@ func main() {
 		return
 	}
 
-	consumer.AddHandler(handler)
+	consumer.AddConcurrentHandlers(handler, 3)
 
 	for {
 		select {
