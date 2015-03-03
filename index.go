@@ -14,6 +14,7 @@ import (
 
 var (
 	configFile            = flag.String("config-file", "", "consumer configuration file")
+	configString          = flag.String("config-string", "", "consumer configuration string")
 	numConcurrentHandlers = flag.Int("concurrent", 3, "number of concurrent handlers")
 )
 
@@ -25,14 +26,13 @@ type ConsumerHandler struct {
 func main() {
 	flag.Parse()
 
-	var consumers []*rabbitmq.Consumer
-
-	configs, err := rabbitmq.LoadConsumersConfig(*configFile)
+	configs, err := rabbitmq.LoadConsumersConfig(*configFile, *configString)
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
+	var consumers []*rabbitmq.Consumer
 	for indx, config := range configs {
 		consumer, err := rabbitmq.NewConsumer(
 			fmt.Sprintf("consumer%d", indx+1),

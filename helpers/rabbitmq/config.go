@@ -50,17 +50,23 @@ func (c *Config) GetConnectionString() string {
 	return fmt.Sprintf("amqp://%s:%d", c.Hostname, c.Port)
 }
 
-func LoadConsumersConfig(filename string) (configs []ConsumerConfig, err error) {
-	if filename == "" {
-		err = fmt.Errorf("Error: %s", "Missing Configuration file!")
-		return
-	}
-	contents, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return
+func LoadConsumersConfig(filePath string, rawString string) (configs []ConsumerConfig, err error) {
+	//this environment variable trumps our other configuration settings
+	if os.Getenv("CONSUMER_CONFIG_STRING") != "" {
+		rawString = os.Getenv("CONSUMER_CONFIG_STRING")
+		filePath = ""
 	}
 
-	err = json.Unmarshal(contents, &configs)
-
+	if filePath != "" || rawString != "" {
+		var contents []byte
+		if filePath != "" {
+			contents, err = ioutil.ReadFile(filePath)
+		} else {
+			contents = []byte(rawString)
+		}
+		err = json.Unmarshal(contents, &configs)
+		return
+	}
+	err = fmt.Errorf("Error: %s", "Missing config filepath or config string.")
 	return
 }
