@@ -1,6 +1,7 @@
 package rabbitmq
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -53,7 +54,13 @@ func (c *Config) GetConnectionString() string {
 func LoadConsumersConfig(filePath string, rawString string) (configs []ConsumerConfig, err error) {
 	//this environment variable trumps our other configuration settings
 	if os.Getenv("CONSUMER_CONFIG_STRING") != "" {
-		rawString = os.Getenv("CONSUMER_CONFIG_STRING")
+		var ds []byte
+		ds, err = base64.URLEncoding.DecodeString(os.Getenv("CONSUMER_CONFIG_STRING"))
+		if err != nil {
+			err = fmt.Errorf("Error: Invalid Config String")
+			return
+		}
+		rawString = string(ds)
 		filePath = ""
 	}
 
