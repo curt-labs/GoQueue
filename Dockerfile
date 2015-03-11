@@ -1,7 +1,6 @@
 FROM golang:1.4
 
-RUN mkdir -p /go/src/github.com/curt-labs/GoQueue
-ADD . /app
+ADD . /go/src/github.com/curt-labs/GoQueue
 
 RUN go install github.com/curt-labs/GoQueue
 
