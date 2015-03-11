@@ -38,6 +38,7 @@ type Event struct {
 	Label      string    `json:"label"`
 	TrackingID string    `json:"-"`
 	Type       EventType `json:"eventType"`
+	UserId     string    `json:"-"`
 
 	Context    map[string]interface{} `json:"context,omitempty"`
 	Properties map[string]interface{} `json:"properties,omitempty"`
@@ -50,7 +51,7 @@ func (ev *Event) SendToGoogleAnalytics() error {
 	vals := make(url.Values, 0)
 	vals.Add("v", "1")             //protocol version - required
 	vals.Add("tid", ev.TrackingID) //tracking id
-	vals.Add("cid", "555")         //client id - required
+	vals.Add("cid", ev.UserId)     //client id - required
 	vals.Add("t", "event")         //even type
 	vals.Add("ec", ev.Category)    //event category
 	vals.Add("ea", ev.Action)      //event action

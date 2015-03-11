@@ -1,9 +1,8 @@
 FROM golang:1.4
 
-RUN mkdir -p /home/deployer/gosrc/src/github.com/curt-labs/GoQueue
-ADD . /home/deployer/gosrc/src/github.com/curt-labs/GoQueue
-WORKDIR /home/deployer/gosrc/src/github.com/curt-labs/GoQueue
-RUN export GOPATH=/home/deployer/gosrc && go get
-RUN export GOPATH=/home/deployer/gosrc && go build -o GoQueue ./index.go
+RUN mkdir -p /go/src/github.com/curt-labs/GoQueue
+ADD . /app
 
-# ENTRYPOINT /home/deployer/gosrc/src/github.com/curt-labs/GoQueue/GoQueue
+RUN go install github.com/curt-labs/GoQueue
+
+ENTRYPOINT /go/bin/GoQueue
