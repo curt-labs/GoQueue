@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	AdminIndexUrl = "http://146.148.55.50/index/part/"
+	AdminIndexUrl = "http://iapi.curtmfg.com/index/part/"
 )
 
 type AdminHandler struct {
