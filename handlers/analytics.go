@@ -1,10 +1,50 @@
-package tracker
+package handlers
 
 import (
+	"encoding/json"
 	"errors"
+	"github.com/bitly/go-nsq"
 	"net/http"
 	"net/url"
 )
+
+type AnalyticsHandler struct {
+	Category     string
+	TrackingCode string
+}
+
+func (c *AnalyticsHandler) HandleMessage(message *nsq.Message) error {
+	var event Event
+
+	if err := json.Unmarshal(message.Body, &event); err != nil {
+		return err
+	}
+
+	if event.Action == "" {
+		var t Track
+		if err := json.Unmarshal(message.Body, &t); err != nil {
+			return err
+		}
+
+		event.Type = APIEvent
+		event.UserId = t.UserId
+		event.Action = t.Event
+		event.Category = c.Category
+		event.TrackingID = c.TrackingCode
+	}
+
+	switch event.Type {
+	case APIEvent:
+		if err := event.SendToGoogleAnalytics(); err != nil {
+			return err
+		}
+	default:
+		return errors.New("Unknown event type")
+	}
+
+	message.Finish()
+	return nil
+}
 
 //these are structs copied from SegmentIO
 type Message struct {

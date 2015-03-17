@@ -32,18 +32,21 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	admin, err := nsq.NewConsumer("admin_change", "ch", config)
 
-	goapiHandler := &handlers.ConsumerHandler{
+	goapiHandler := &handlers.AnalyticsHandler{
 		Category:     "GoAPI",
 		TrackingCode: "UA-59297117-1",
 	}
-	v2MockHandler := &handlers.ConsumerHandler{
+	v2MockHandler := &handlers.AnalyticsHandler{
 		Category:     "v2Mock",
 		TrackingCode: "UA-59297117-1",
 	}
+	adminHandler := &handlers.AdminHandler{}
 
 	goapi.AddConcurrentHandlers(goapiHandler, ConsumerConcurrency)
 	v2mock.AddConcurrentHandlers(v2MockHandler, ConsumerConcurrency)
+	admin.AddConcurrentHandlers(adminHandler, ConsumerConcurrency)
 
 	running := 0
 	err = goapi.ConnectToNSQDs(NSQDHosts)
@@ -52,6 +55,11 @@ func main() {
 		wg.Add(1)
 	}
 	err = v2mock.ConnectToNSQDs(NSQDHosts)
+	if err == nil {
+		running = running + 1
+		wg.Add(1)
+	}
+	err = admin.ConnectToNSQDs(NSQDHosts)
 	if err == nil {
 		running = running + 1
 		wg.Add(1)
