@@ -9,7 +9,8 @@ import (
 )
 
 const (
-	AdminIndexUrl = "http://iapi.curtmfg.com/index/part/"
+	AdminPartIndexUrl     = "http://iapi.curtmfg.com/index/part/"
+	AdminCategoryIndexUrl = "http://iapi.curtmfg.com/index/category/"
 )
 
 type AdminHandler struct {
@@ -27,9 +28,9 @@ func (a *AdminHandler) HandleMessage(message *nsq.Message) error {
 
 	switch strings.ToLower(a.ModificationType) {
 	case "part":
-		err = a.pushPart()
+		err = a.index(AdminPartIndexUrl)
 	case "category":
-		err = a.pushCategory()
+		err = a.index(AdminCategoryIndexUrl)
 	}
 
 	if err != nil {
@@ -41,9 +42,9 @@ func (a *AdminHandler) HandleMessage(message *nsq.Message) error {
 	return nil
 }
 
-func (a *AdminHandler) pushPart() error {
+func (a *AdminHandler) index(endpoint string) error {
 
-	res, err := http.Get(fmt.Sprintf("%s%s", AdminIndexUrl, a.Identifier))
+	res, err := http.Get(fmt.Sprintf("%s%s", endpoint, a.Identifier))
 	if err != nil {
 		return err
 	}
@@ -57,9 +58,5 @@ func (a *AdminHandler) pushPart() error {
 		return fmt.Errorf("index called failed with %d", res.StatusCode)
 	}
 
-	return nil
-}
-
-func (a *AdminHandler) pushCategory() error {
 	return nil
 }
