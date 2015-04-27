@@ -1,12 +1,9 @@
 FROM golang:1.4
  
-WORKDIR /gopath/src/github.com/curt-labs/GoQueue
-ADD . /gopath/src/github.com/curt-labs/GoQueue/
- 
-# go get all of the dependencies
+
+ADD . /go/src/github.com/curt-labs/GoQueue
+WORKDIR /go/src/github.com/curt-labs/GoQueue
 RUN go get
+RUN go install github.com/curt-labs/GoQueue
 
-RUN go install
-
-CMD []
-ENTRYPOINT ["/gopath/bin/GoQueue"]
+ENTRYPOINT ["/go/bin/GoQueue"]
