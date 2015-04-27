@@ -1,4 +1,4 @@
-FROM google/golang
+FROM golang:1.4
  
 WORKDIR /gopath/src/github.com/curt-labs/GoQueue
 ADD . /gopath/src/github.com/curt-labs/GoQueue/
