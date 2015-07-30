@@ -5,24 +5,24 @@ import (
 	"github.com/curt-labs/GoQueue/handlers"
 
 	"log"
-	"sync"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 var (
 	NSQDHosts = []string{
-		"104.197.79.201:4150",
-		"146.148.95.219:4150",
-		"130.211.139.208:4150",
-		"130.211.190.200:4150",
-		"104.197.18.26:4150",
+		"146.148.64.5:4150",
+		"104:197.73.14:4150",
+		"104.197.78.177:4150",
+		"104.154.51.41:4150",
+		"162.222.182.178:4150",
 	}
 
 	ConsumerConcurrency = 100
 )
 
 func main() {
-
-	wg := &sync.WaitGroup{}
 
 	config := nsq.NewConfig()
 	goapi, err := nsq.NewConsumer("goapi_analytics", "ch", config)
@@ -33,6 +33,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGINT, syscall.SIGTERM)
+
 	admin, err := nsq.NewConsumer("admin_change", "ch", config)
 
 	goapiHandler := &handlers.AnalyticsHandler{
@@ -49,27 +53,31 @@ func main() {
 	v2mock.AddConcurrentHandlers(v2MockHandler, ConsumerConcurrency)
 	admin.AddConcurrentHandlers(adminHandler, ConsumerConcurrency)
 
-	running := 0
 	err = goapi.ConnectToNSQDs(NSQDHosts)
 	if err == nil {
-		running = running + 1
-		wg.Add(1)
+		log.Fatal(err)
 	}
 	err = v2mock.ConnectToNSQDs(NSQDHosts)
 	if err == nil {
-		running = running + 1
-		wg.Add(1)
+		log.Fatal(err)
 	}
 	err = admin.ConnectToNSQDs(NSQDHosts)
 	if err == nil {
-		running = running + 1
-		wg.Add(1)
+		log.Fatal(err)
 	}
 
-	if running == 0 {
-		wg.Done()
-		return
+	for {
+		select {
+		case <-admin.StopChan:
+			return
+		case <-v2mock.StopChan:
+			return
+		case <-goapi.StopChan:
+			return
+		case <-termChan:
+			admin.Stop()
+			v2mock.Stop()
+			goapi.Stop()
+		}
 	}
-	wg.Wait()
-
 }
