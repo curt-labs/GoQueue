@@ -13,17 +13,18 @@ import (
 var (
 	NSQDHosts = []string{
 		"146.148.64.5:4150",
-		"104:197.73.14:4150",
+		"104.197.73.14:4150",
 		"104.197.78.177:4150",
 		"104.154.51.41:4150",
 		"162.222.182.178:4150",
+		// "127.0.0.1:4150",
 	}
 
 	ConsumerConcurrency = 100
 )
 
 func main() {
-
+	log.Print("running")
 	config := nsq.NewConfig()
 	goapi, err := nsq.NewConsumer("goapi_analytics", "ch", config)
 	if err != nil {
@@ -54,15 +55,15 @@ func main() {
 	admin.AddConcurrentHandlers(adminHandler, ConsumerConcurrency)
 
 	err = goapi.ConnectToNSQDs(NSQDHosts)
-	if err == nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 	err = v2mock.ConnectToNSQDs(NSQDHosts)
-	if err == nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 	err = admin.ConnectToNSQDs(NSQDHosts)
-	if err == nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 

@@ -16,6 +16,11 @@ const (
 	AdminCategoryIndexUrl = "http://iapi.curtmfg.com/index/category/"
 	PartIndexErrorUrl     = "http://iapi.curtmfg.com/index/part/error"
 	PartIndexSuccessUrl   = "http://iapi.curtmfg.com/index/part/success"
+
+	// AdminPartIndexUrl     = "http://localhost:8080/index/part/"
+	// AdminCategoryIndexUrl = "http://localhost:8080/index/category/"
+	// PartIndexErrorUrl     = "http://localhost:8080/index/part/error"
+	// PartIndexSuccessUrl   = "http://localhost:8080/index/part/success"
 )
 
 type AdminHandler struct {
@@ -36,7 +41,6 @@ const (
 )
 
 func (a *AdminHandler) HandleMessage(message *nsq.Message) error {
-
 	err := json.Unmarshal(message.Body, &a)
 	if err != nil {
 		return err
@@ -71,9 +75,14 @@ func (a *AdminHandler) updatePartIndexRecords(partIndexError error) error {
 	if err != nil {
 		return err
 	}
+	body, err := (ioutil.ReadAll(res.Body))
+	if err != nil {
+		return err
+	}
 	defer res.Body.Close()
+
 	if res.StatusCode != 200 {
-		return fmt.Errorf("index called failed with %d", res.StatusCode)
+		return fmt.Errorf("updatePartIndexRecords called failed with code: %d. %v", res.StatusCode, string(body))
 	}
 	return nil
 }
