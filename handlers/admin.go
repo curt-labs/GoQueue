@@ -17,10 +17,10 @@ const (
 	PartIndexErrorUrl     = "http://iapi.curtmfg.com/index/part/error"
 	PartIndexSuccessUrl   = "http://iapi.curtmfg.com/index/part/success"
 
-	// AdminPartIndexUrl     = "http://localhost:8080/index/part/"
-	// AdminCategoryIndexUrl = "http://localhost:8080/index/category/"
-	// PartIndexErrorUrl     = "http://localhost:8080/index/part/error"
-	// PartIndexSuccessUrl   = "http://localhost:8080/index/part/success"
+	// AdminPartIndexUrl     = "http://localhost:8081/index/part/"
+	// AdminCategoryIndexUrl = "http://localhost:8081/index/category/"
+	// PartIndexErrorUrl     = "http://localhost:8081/index/part/error"
+	// PartIndexSuccessUrl   = "http://localhost:8081/index/part/success"
 )
 
 type AdminHandler struct {
@@ -45,28 +45,32 @@ func (a *AdminHandler) HandleMessage(message *nsq.Message) error {
 	if err != nil {
 		return err
 	}
+	defer message.Finish()
 
 	switch strings.ToLower(a.ModificationType) {
 	case "part":
+		a.Error = "" //Hmm...should already be empty....
 		partIndexErr := a.index(AdminPartIndexUrl)
 		err = a.updatePartIndexRecords(partIndexErr)
 	case "category":
+		a.Error = ""
 		err = a.index(AdminCategoryIndexUrl)
 	}
 
 	if err != nil {
 		return err
 	}
-	message.Finish()
+
 	return nil
 }
 
 func (a *AdminHandler) updatePartIndexRecords(partIndexError error) error {
 	url := PartIndexSuccessUrl
-	if partIndexError != nil {
+	if partIndexError != nil && partIndexError.Error() != "" {
 		a.Error = partIndexError.Error()
 		url = PartIndexErrorUrl
 	}
+
 	j, err := json.Marshal(&a)
 	if err != nil {
 		return err
