@@ -4,16 +4,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/bitly/go-nsq"
-	"gopkg.in/mgo.v2/bson"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"github.com/bitly/go-nsq"
+	"gopkg.in/mgo.v2/bson"
 )
 
 const (
 	AdminPartIndexUrl     = "http://iapi.curtmfg.com/index/part/"
 	AdminCategoryIndexUrl = "http://iapi.curtmfg.com/index/category/"
+	AdminCustomerIndexUrl = "http://iapi.curtmfg.com/index/customer/"
 	PartIndexErrorUrl     = "http://iapi.curtmfg.com/index/part/error"
 	PartIndexSuccessUrl   = "http://iapi.curtmfg.com/index/part/success"
 
@@ -55,6 +57,9 @@ func (a *AdminHandler) HandleMessage(message *nsq.Message) error {
 	case "category":
 		a.Error = ""
 		err = a.index(AdminCategoryIndexUrl)
+	case "customer":
+		a.Error = ""
+		err = a.index(AdminCustomerIndexUrl)
 	}
 
 	if err != nil {
